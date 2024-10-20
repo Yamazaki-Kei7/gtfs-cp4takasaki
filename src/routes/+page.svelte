@@ -14,9 +14,8 @@
 			<LayerPanel />
 		</div>
 
-			<div class="w-10/12">
-				<MapComponent />
-			</div>
+		<div class="w-10/12">
+			<MapComponent />
 		</div>
 	</div>
 </body>
