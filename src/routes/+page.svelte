@@ -4,18 +4,20 @@
 	import MapComponent from './MapComponent.svelte';
 </script>
 
-<body class="flex flex-col h-screen m-2">
-	<div class="flex-none">
-		<Header />
-	</div>
-
-	<div class="flex flex-grow my-2 gap-2 h-full">
-		<div class="w-2/12 h-full">
-			<LayerPanel />
+<body class="h-screen">
+	<div class="flex flex-col h-full p-2">
+		<div class="flex-none">
+			<Header />
 		</div>
 
-		<div class="w-10/12">
-			<MapComponent />
+		<div class="flex flex-grow mt-2 gap-2 h-full">
+			<div class="w-2/12">
+				<LayerPanel />
+			</div>
+
+			<div class="w-10/12">
+				<MapComponent />
+			</div>
 		</div>
 	</div>
 </body>
