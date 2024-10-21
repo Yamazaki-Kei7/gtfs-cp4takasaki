@@ -40,7 +40,3 @@
 		</GeoJSON>
 	</MapLibre>
 </div>
-
-{#if clickedFeature}
-	<p>バス停名: <span class="font-bold text-gray-800">{clickedFeature.name}</span></p>
-{/if}
