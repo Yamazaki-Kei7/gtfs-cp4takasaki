@@ -3,10 +3,10 @@
 	let clickedFeature: { name?: string } | null = null;
 </script>
 
-<div class="h-full border-gray-600">
+<div class="h-full">
 	<MapLibre
 		style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-		class="h-full rounded-2xl border-gray-600 border-2"
+		class="h-full rounded-2xl border-purple-600 border-2"
 		standardControls
 		center={[138.915, 36.383]}
 		zoom={10}
