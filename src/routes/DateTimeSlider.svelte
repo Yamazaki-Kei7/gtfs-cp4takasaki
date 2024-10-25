@@ -36,7 +36,7 @@
 		const year = date.getFullYear();
 		const month = (date.getMonth() + 1).toString().padStart(2, '0'); // 月は0から始まるため、1を加える
 		const day = date.getDate().toString().padStart(2, '0');
-		const apiUrl = `http://api.national-holidays.jp/${year}/${month}/${day}`;
+		const apiUrl = `https://api.national-holidays.jp/${year}/${month}/${day}`;
 		// fetchでAPIを叩いて、祝日かどうかを判定する
 		const res = await fetch(apiUrl);
 		const data = await res.json();
