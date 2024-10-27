@@ -1,42 +1,173 @@
-<script lang="ts">
-	import { MapLibre, GeoJSON, LineLayer, SymbolLayer, MarkerLayer } from 'svelte-maplibre';
-	let clickedFeature: { name?: string } | null = null;
+<script setup lang="ts">
+	import { onMount } from 'svelte';
+	import maplibregl, { type StyleSpecification } from 'maplibre-gl';
+	import type { Map } from 'maplibre-gl';
+	import 'maplibre-gl/dist/maplibre-gl.css';
+
+	import { createColorMatchExpression } from '$lib/utils';
+
+	// 地図
+	let map: Map | undefined;
+
+	// 日にちの種類
+	export let dayType: string;
+	export let minutes: number;
+
+	$: if (dayType) {
+		console.log(dayType);
+		map?.setFilter('busRoute', ['==', ['get', 'service_id'], dayType]);
+		map?.setFilter('movingBus', [
+			'all',
+			['==', ['get', 'a_time'], minutes],
+			['==', ['get', 'service_id'], dayType]
+		]);
+	}
+
+	// 時間の変更
+	$: if (minutes) {
+		map?.setFilter('movingBus', [
+			'all',
+			['==', ['get', 'a_time'], minutes],
+			['==', ['get', 'service_id'], dayType]
+		]);
+	}
+
+	onMount(() => {
+		const locationHref = location.href;
+		console.log(locationHref);
+		map = new maplibregl.Map({
+			container: 'map',
+			style: {
+				version: 8,
+				sources: {
+					gsiPaleMap: {
+						type: 'raster',
+						tiles: ['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'],
+						tileSize: 256,
+						attribution:
+							"<a href='https://maps.gsi.go.jp/development/ichiran.html'>地理院タイル</a>"
+					},
+					gisOrthoMap: {
+						type: 'raster',
+						tiles: ['https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg'],
+						tileSize: 256,
+						attribution:
+							"<a href='https://maps.gsi.go.jp/development/ichiran.html'>地理院タイル</a>"
+					},
+					busRoute: {
+						type: 'geojson',
+						data: 'data/bus_route.geojson',
+						attribution:
+							'<a href="https://www.city.takasaki.gunma.jp/page/1756.html">バス情報データ</a>'
+					},
+					stops: {
+						type: 'geojson',
+						data: 'data/stops.geojson',
+						attribution:
+							'<a href="https://www.city.takasaki.gunma.jp/page/1756.html">バス情報データ</a>'
+					},
+					movingBus: {
+						type: 'vector',
+						tiles: [`${location.href}data/tiles/{z}/{x}/{y}.pbf`],
+						minzoom: 10,
+						maxzoom: 18
+					}
+				},
+				layers: [
+					// 地理院淡色地図の表示
+					{
+						id: 'gsiPaleMap',
+						type: 'raster',
+						source: 'gsiPaleMap',
+						minzoom: 0,
+						maxzoom: 18
+					},
+					// 地理院オルソ画像の表示
+					{
+						id: 'gisOrthoMap',
+						type: 'raster',
+						source: 'gisOrthoMap',
+						minzoom: 0,
+						maxzoom: 18,
+						layout: {
+							visibility: 'none'
+						}
+					},
+					// バスの経路の色設定
+					{
+						id: 'busRoute',
+						type: 'line',
+						source: 'busRoute',
+						paint: {
+							'line-width': 2,
+							'line-color': createColorMatchExpression() as any,
+							'line-opacity': 0.7
+						}
+					},
+					// バス停のアイコン
+					{
+						id: 'stops',
+						type: 'circle',
+						source: 'stops',
+						paint: {
+							'circle-radius': 3,
+							'circle-stroke-color': '#FFFFFF',
+							'circle-stroke-width': 0.5,
+							'circle-color': '#005773',
+							'circle-opacity': 0.5
+						}
+					},
+					// バスの位置情報
+					{
+						id: 'movingBus',
+						type: 'circle',
+						source: 'movingBus',
+						'source-layer': 'moving_bus',
+						paint: {
+							'circle-radius': 7,
+							'circle-stroke-color': '#FFFFFF',
+							'circle-stroke-width': 2,
+							'circle-color': createColorMatchExpression() as any,
+							'circle-opacity': 0.7
+						}
+					}
+				]
+			},
+			center: [138.96, 36.37],
+			zoom: 11
+		});
+
+		map.addControl(
+			new maplibregl.NavigationControl({
+				visualizePitch: true
+			}),
+			'top-right'
+		);
+
+		let lastFrameTime = 0;
+
+		// アニメーション用の関数
+		function animateCircleRadius(timestamp: any) {
+			if (!lastFrameTime) lastFrameTime = timestamp;
+			const elapsed = timestamp - lastFrameTime;
+			const radius = 7 + 1 * Math.sin(elapsed / 300);
+
+			map?.setPaintProperty('movingBus', 'circle-radius', radius);
+			requestAnimationFrame(animateCircleRadius);
+		}
+
+		map.on('load', () => {
+			requestAnimationFrame(animateCircleRadius);
+			map?.setFilter('movingBus', ['==', ['get', 'service_id'], dayType]);
+			map?.setFilter('movingBus', ['==', ['get', 'a_time'], minutes]);
+		});
+	});
 </script>
 
-<div class="h-full">
-	<MapLibre
-		style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-		class="h-full rounded-2xl border-purple-600 border-2"
-		standardControls
-		center={[138.915, 36.383]}
-		zoom={10}
-		images={[{ id: 'busStopIcon', url: 'busStop.png' }]}
-	>
-		<!-- バスルート -->
-		<GeoJSON id="busRoute" data="data/bus_route.geojson">
-			<LineLayer
-				paint={{
-					'line-width': 2,
-					'line-color': '#008800',
-					'line-opacity': 0.7
-				}}
-			/>
-		</GeoJSON>
+<div id="map" />
 
-		<!-- パス停 -->
-		<GeoJSON id="busStop" data="data/stops.geojson">
-			<SymbolLayer
-				layout={{
-					'icon-image': 'busStopIcon', // 事前に画像を定義して使用
-					'icon-size': 0.5,
-					'icon-allow-overlap': true, // アイコンが重なっても表示
-					'text-field': '{name}', // バス停の名前を表示
-					'text-offset': [0, -2], // アイコンとテキストの間隔
-					'text-size': 10 // テキストのサイズ
-				}}
-				minzoom={12}
-				on:click={(e) => (clickedFeature = e.detail.features?.[0]?.properties)}
-			/>
-		</GeoJSON>
-	</MapLibre>
-</div>
+<style>
+	#map {
+		height: 100%;
+	}
+</style>
