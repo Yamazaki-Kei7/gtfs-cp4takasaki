@@ -1,16 +1,25 @@
 <script lang="ts">
 	import Slider from '@smui/slider';
 	import { DateInput } from 'date-picker-svelte';
+	import { createEventDispatcher } from 'svelte';
 
 	let date = new Date();
-	let minutes: number = 0;
-	let dayType: string = '';
+	export let minutes: number = 0;
+	export let dayType: string = '';
+	const dispatch = createEventDispatcher();
 
 	// dateの値が実装されたら、datermineDayType関数を呼び出して、日付タイプを取得する
 	$: if (date) updateDayType();
 
 	async function updateDayType() {
 		dayType = await determineDayType(date);
+
+		const handleMinutesChange = (newMinutes: any) => {
+			minutes = newMinutes;
+			// 親コンポーネントに通知
+			dispatch('updateMinutes', { minutes });
+			console.log(minutes);
+		};
 	}
 
 	const determineDayType = async (date: Date): Promise<string> => {
